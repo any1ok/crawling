@@ -1,0 +1,300 @@
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
+from bs4 import BeautifulSoup
+import requests
+import time
+import urllib.request
+
+def tabswitch(num):
+    driver.switch_to.window(driver.window_handles[num])
+
+def rest(sec):
+    time.sleep(sec)
+    
+def scroll(num):
+    driver.execute_script("window.scrollTo(0, '"+str(num)+"');")
+    
+def SelectOption(name):
+    tabswitch(0)
+    choice_str = ""
+    try:
+        elem = driver.find_element_by_xpath('//select[@name = "'+str(name)+'"]')
+    except:
+        #print(str(name)+" exception")
+        return
+    else:
+        for choice in elem.find_elements_by_tag_name('option'):
+            if choice.get_attribute('selected'):
+                choice_str = choice.text
+                #print(choice_str)
+                break
+        tabswitch(1)
+        try:
+            elem = driver.find_element_by_xpath('//select/option[@value = "'+str(choice_str)+'"]')
+        except:
+            #print(str(name)+" exception")
+            return
+        else:    
+            elem.click()
+
+def CopyContent(tagname):
+    tabswitch(0)
+    html = driver.page_source
+    soup = BeautifulSoup(html, 'html.parser')
+    try:
+        content = soup.find('input', {'name': tagname}).get('value')
+        #print(content)
+    except:
+        #print(str(tagname)+" exception")
+        return
+    else:
+        #print(content)
+        tabswitch(1)
+        try:
+            elem = driver.find_element_by_name(tagname)
+        except:
+            #print(str(tagname)+" exception")
+            return
+        else:
+            if(content != '0'):
+                try:
+                    elem.clear()
+                except:
+                    #print("elem.clear() + exception")
+                    return
+                else:
+                    elem.send_keys(content)
+                    
+jscode = '''function makeTag(argu1) {
+    var node = document.createElement("p");
+    var textnode = document.createTextNode(argu1);
+    node.appendChild(textnode);
+    
+    document.getElementById("body").appendChild(node);
+}
+'''
+ 
+ctg = {}
+ctg['아파트'] = '0'
+ctg['단독다가구'] = '1'
+ctg['빌라연립다세대'] = '2'
+ctg['원룸투룸쓰리룸'] = '3'
+ctg['오피스텔'] = '4'
+ctg['상가점포'] = '5'
+ctg['상가주택'] = '6'
+ctg['상가건물'] = '7'
+ctg['숙박콘도펜션'] = '8'
+ctg['전원농가주택'] = '9'
+ctg['토지임야'] = '10'
+ctg['빌딩'] = '11'
+ctg['사무실']='12'
+ctg['공장/창고'] = '13'
+ctg['분양권'] = '14'
+ctg['기타']='15'    
+    
+driver = webdriver.Chrome("C:/Users/h_jun/chromedriver.exe")
+
+
+
+#구글접속
+driver.get("https://google.com/")
+
+#오일장신문검색
+#//*[@id="tsf"]/div[2]/div[1]/div[1]/div[1]/div/div[2]/input
+#'//*[@id="tsf"]/div[2]/div[1]/div[1]/div/div[2]/input'
+elem = driver.find_element_by_xpath('//*[@id="tsf"]/div[2]/div[1]/div[1]/div/div[2]/input')
+#//*[@id="tsf"]/div[2]/div[1]/div[1]/div/div[2]/input
+
+elem.send_keys('http://www.jejuall.com')
+elem.send_keys(Keys.RETURN)
+
+rest(1)
+
+#새탭으로 오일장신문열기
+elem = driver.find_elements_by_partial_link_text('www.jejuall.com')
+elem[0].send_keys(Keys.CONTROL + "\n")
+
+#쉬기
+rest(1)
+#첫번째탭으로 전환 후 오일장신문열기
+tabswitch(0)
+elem = driver.find_element_by_partial_link_text('www.jejuall.com')
+elem.send_keys('\n')
+
+#대기(로그인, 매물관리클릭, 수정버튼, 매물등록, 매물종류선택)
+input('준비완료[yes]')
+
+#복사시작!!!!
+copynum = 0;
+while(1):
+    driver.get(driver.current_url)
+
+    #첫번째탭의 html을 soup에 넘기기
+    tabswitch(0)
+    html = driver.page_source
+    soup = BeautifulSoup(html, 'html.parser')
+
+#첫번째탭 매물종류복사
+    kind = soup.select('.greybox')[0].text.strip()
+    #print(kind)
+#매물종류를 id값으로 변환
+    kind_id = "cc0" + ctg[kind]
+    #print(kind_id)
+
+    tabswitch(1)
+    elem = driver.find_element_by_id(kind_id)
+    elem.click()
+    
+    #거래유형
+    tabswitch(0)
+    typenum = -1
+    typechoices = driver.find_elements_by_name('typechoice')
+    for typechoice in typechoices:
+        typenum += 1
+        if(typechoice.get_attribute('checked')):
+            break
+    scroll(350)
+    tabswitch(1)
+    elem = driver.find_elements_by_name('typechoice')
+    elem[typenum].click()
+    scroll(350)
+    
+    SelectOption('sido')
+    SelectOption('dong')
+    
+    ############아파트인 경우, 추가선택###########
+    if kind_id == "cc00":
+        tabswitch(1)
+        
+        elem.driver.find_elements_by_name()
+    
+    CopyContent('roadFullAddr')
+    CopyContent('subject')
+    #공급면적, 전용면적
+    CopyContent('ct_month_expenses')
+    CopyContent('sup_area_m')
+    CopyContent('dedi_area_m')
+    #매매가, 융자금
+    CopyContent('bns_sale_price')
+    CopyContent('bns_loan')
+    #입주가능일, 해당층/층층, 준공년도, 방향...
+    CopyContent('movin_num')
+    CopyContent('floor')
+    CopyContent('completion')
+    CopyContent('diection')
+    CopyContent('ct_deposit_money')
+    CopyContent('rt_down_payment')
+    CopyContent('rt_year_pay')
+    CopyContent('rt_month_pay')
+    CopyContent('rt_month_expenses')
+    CopyContent('ct_month_expenses')
+    CopyContent('households_num')
+    CopyContent('room_num')
+    #지목, 용도지역
+    SelectOption('room_num')
+    SelectOption('diection')
+    
+    driver.switch_to.frame(driver.find_element_by_tag_name('iframe'))
+    driver.switch_to.frame(driver.find_element_by_tag_name('iframe'))
+    
+    #body > p:nth-child(1) 
+    
+    html = driver.page_source
+    soup = BeautifulSoup(html, 'html.parser')
+    
+    #lasts = soup.find('body', {'class':'se2_inputarea'})
+    p_texts = []
+    p_texts = soup.find_all('p') #매물 상세 설명 복사
+    
+    #디버깅용 출력
+    print("!")
+    text_num = 0
+    for texts in p_texts:
+        text_num+=1
+        text = texts.get_text() + '?'
+        print(text)
+    print("!")
+    
+    #상세설명복사한것 입력
+    tabswitch(1)
+    driver.switch_to.frame(driver.find_element_by_tag_name('iframe'))
+    driver.switch_to.frame(driver.find_element_by_tag_name('iframe'))
+    elem = driver.find_element_by_tag_name('body')
+    
+    for texts in p_texts:
+        text = texts.get_text()
+        
+        ##driver.execute_script(jscode, text)
+    
+        elem.send_keys(text)
+        text_num -= 1
+        if text_num != 0:
+            elem.send_keys(Keys.ENTER)
+            driver.execute_script("remove()", elem)
+        #elem.send_keys(Keys.ENTER)
+        #elem.send_keys(Keys.ENTER)
+    
+    #관리자메모 복사하기!!!!!
+    tabswitch(0)
+    driver.switch_to.parent_frame()
+    driver.switch_to.parent_frame()
+    
+    html = driver.page_source
+    soup = BeautifulSoup(html, 'html.parser')
+    
+    lastTextsWithTag = []
+    lastTextsWithTag = soup.find_all('textarea')
+    lastText = ""
+    lastText = lastTextsWithTag[1].get_text()
+    print(lastText)
+    
+    
+    #tag_num = 0;
+    #for lastTextWithTag in lastTextsWithTag:
+        #tag_num += 1
+        #print(lastTextWithTag)
+        
+    #lastText = lastTextWithTag.get_text()
+    #print(lastTextWithTag)
+    
+    #관리자메모 붙여넣기!!!!!
+    tabswitch(1)
+    #driver.switch_to.frame(driver.find_element_by_tag_name('iframe'))
+    #driver.switch_to.frame(driver.find_element_by_tag_name('iframe'))
+    
+    elem = driver.find_element_by_name('admin_info_content')
+    elem.send_keys(lastText)
+    
+#    try:
+#        content = soup.find('input', {'name': tagname}).get('value')
+#        print(content)
+#    except:
+#        print(str(tagname)+" exception")
+#        return
+#    else:
+#        print(content)
+#        tabswitch(1)
+#        try:
+#            elem = driver.find_element_by_name(tagname)
+#        except:
+#            print(str(tagname)+" exception")
+#            return
+#        else:
+#            if(content != '0'):
+#                elem.clear()
+#                elem.send_keys(content)
+    #등록
+    #register = input('등록[y]')
+    #if (register == 'y'):
+    #    tabswitch(1)
+    #    elem = driver.find_element_by_xpath('//*[@id="saveProperty"]')
+    #    elem.send_keys('\n')
+    #    tabswitch(0)
+    #    elem = driver.find_element_by_xpath('//*[@id="container"]/div/div[3]/div[2]/div/div[1]/a[1]')
+    #    elem.send_keys('\n')
+    #breakpoint
+    copynum+=1
+    print (copynum)
+    close = input('close[y/n]')
+    if(close == 'y'):
+        break
